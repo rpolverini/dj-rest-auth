@@ -10,18 +10,22 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.debug import sensitive_post_parameters
 from rest_framework import status
+from rest_framework.serializers import ReadOnlyField
 from rest_framework.exceptions import MethodNotAllowed, NotFound
 from rest_framework.generics import CreateAPIView, GenericAPIView, ListAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from dj_rest_auth.app_settings import api_settings
+from dj_rest_auth.app_settings import (
+    JWTSerializer, TokenSerializer, create_token,api_settings
+)
 from dj_rest_auth.models import TokenModel
 from dj_rest_auth.registration.serializers import (
-    SocialAccountSerializer, SocialConnectSerializer, SocialLoginSerializer,
+    DetailResponseSerializer, SocialAccountSerializer, SocialConnectSerializer, SocialLoginSerializer,
     VerifyEmailSerializer, ResendEmailVerificationSerializer
 )
+from dj_rest_auth.schema import DynamicResponseSerializerSchema
 from dj_rest_auth.utils import jwt_encode
 from dj_rest_auth.views import LoginView
 
@@ -36,27 +40,38 @@ class RegisterView(CreateAPIView):
     permission_classes = api_settings.REGISTER_PERMISSION_CLASSES
     token_model = TokenModel
     throttle_scope = 'dj_rest_auth'
+    schema = DynamicResponseSerializerSchema()
 
     @sensitive_post_parameters_m
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
-    def get_response_data(self, user):
+    def get_response_serializer(self):
         if allauth_account_settings.EMAIL_VERIFICATION == \
                 allauth_account_settings.EmailVerificationMethod.MANDATORY:
-            return {'detail': _('Verification e-mail sent.')}
-
+            return DetailResponseSerializer
         if api_settings.USE_JWT:
+            return JWTSerializer
+        else:
+            return TokenSerializer
+
+    def get_response_data(self, user):
+        serializer_class = self.get_response_serializer()
+        if serializer_class == DetailResponseSerializer:
+            return serializer_class(
+                {'detail': _('Verification e-mail sent.')},
+                context=self.get_serializer_context()).data
+        elif serializer_class == JWTSerializer:
             data = {
                 'user': user,
-                'access': self.access_token,
-                'refresh': self.refresh_token,
+                'access_token': self.access_token,
+                'refresh_token': self.refresh_token,
             }
-            return api_settings.JWT_SERIALIZER(data, context=self.get_serializer_context()).data
-        elif api_settings.SESSION_LOGIN:
-            return None
+            return serializer_class(data, context=self.get_serializer_context()).data
+        elif serializer_class == TokenSerializer:
+            return serializer_class(user.auth_token, context=self.get_serializer_context()).data
         else:
-            return api_settings.TOKEN_SERIALIZER(user.auth_token, context=self.get_serializer_context()).data
+            raise ValueError("Unrecognized serializer {}".format(serializer_class.__name__))
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

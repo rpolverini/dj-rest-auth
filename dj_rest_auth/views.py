@@ -12,8 +12,10 @@ from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.schemas.openapi import AutoSchema
 
 from .app_settings import api_settings
+from .schema import DynamicResponseSerializerSchema
 from .models import get_token_model
 from .utils import jwt_encode
 
@@ -38,6 +40,7 @@ class LoginView(GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = api_settings.LOGIN_SERIALIZER
     throttle_scope = 'dj_rest_auth'
+    schema = DynamicResponseSerializerSchema()
 
     user = None
     access_token = None
