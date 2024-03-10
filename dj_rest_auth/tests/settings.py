@@ -35,7 +35,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 # Adding for backwards compatibility for Django 1.8 tests

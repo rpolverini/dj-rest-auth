@@ -32,7 +32,9 @@ setup(
         'djangorestframework>=3.13.0',
     ],
     extras_require={
+        # 'with_social': ['django-allauth>=0.56.0,<0.62'],
         'with_social': ['django-allauth>=0.56.0,<0.58.0'],
+
     },
     tests_require=[
         'coveralls>=1.11.1',
