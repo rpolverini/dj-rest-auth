@@ -17,9 +17,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from dj_rest_auth.app_settings import (
-    JWTSerializer, TokenSerializer, create_token,api_settings
-)
+from dj_rest_auth.app_settings import api_settings
+
+from dj_rest_auth.serializers import JWTSerializer, TokenSerializer
+
 from dj_rest_auth.models import TokenModel
 from dj_rest_auth.registration.serializers import (
     DetailResponseSerializer, SocialAccountSerializer, SocialConnectSerializer, SocialLoginSerializer,
